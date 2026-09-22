@@ -84,7 +84,9 @@ if [[ ! -f "$APP/Contents/Resources/MarkdownCanvas_MarkdownCanvas.bundle/default
   exit 1
 fi
 
-[[ -f dist/AppIcon.icns ]] && cp dist/AppIcon.icns "$APP/Contents/Resources/"
+# 图标 / dmg 背景图在仓库根目录（版本控制内）—— dist/ 被 gitignore，
+# 放那边曾导致重装环境后图标丢失
+[[ -f AppIcon.icns ]] && cp AppIcon.icns "$APP/Contents/Resources/"
 
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -109,6 +111,19 @@ cat > "$APP/Contents/Info.plist" <<PLIST
         <key>LSHandlerRank</key>         <string>Alternate</string>
         <key>LSItemContentTypes</key>
         <array><string>net.daringfireball.markdown</string><string>public.plain-text</string></array>
+    </dict></array>
+    <!-- 声明 Markdown UTI（系统已认识也无害）：.md/.markdown/.mdown/.mkd -->
+    <key>UTImportedTypeDeclarations</key>
+    <array><dict>
+        <key>UTTypeIdentifier</key>      <string>net.daringfireball.markdown</string>
+        <key>UTTypeDescription</key>     <string>Markdown Document</string>
+        <key>UTTypeConformsTo</key>
+        <array><string>public.plain-text</string></array>
+        <key>UTTypeTagSpecification</key>
+        <dict>
+            <key>public.filename-extension</key>
+            <array><string>md</string><string>markdown</string><string>mdown</string><string>mkd</string></array>
+        </dict>
     </dict></array>
 </dict>
 </plist>
@@ -137,12 +152,13 @@ RW="$DIST/$APP_NAME-rw.dmg"
 rm -f "$DMG" "$RW"
 
 # 背景图：浅色，中间留出两个图标位。
-# 源码在 dist/mkdmgbg.swift，按需编译 —— 产物不存在时现编一个。
-BG_SRC="$DIST/dmg-background.png"
+# 优先用仓库根目录的版本控制副本；否则用 dist/mkdmgbg.swift 现编一个。
+BG_SRC="dmg-background.png"
 BG_BIN="$DIST/.mkdmgbg"
 if [[ ! -f "$BG_SRC" && -f "$DIST/mkdmgbg.swift" ]]; then
   [[ -x "$BG_BIN" ]] || swiftc -O "$DIST/mkdmgbg.swift" -o "$BG_BIN" 2>/dev/null || true
-  [[ -x "$BG_BIN" ]] && "$BG_BIN" "$BG_SRC" >/dev/null 2>&1 || true
+  [[ -x "$BG_BIN" ]] && "$BG_BIN" "$DIST/dmg-background.png" >/dev/null 2>&1 || true
+  [[ -f "$DIST/dmg-background.png" ]] && BG_SRC="$DIST/dmg-background.png"
 fi
 
 echo "==> 生成 $DMG"

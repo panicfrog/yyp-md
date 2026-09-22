@@ -476,6 +476,18 @@ final class MenuController: NSObject {
 }
 let menuController = MenuController()
 
+/// Finder 双击 / 右键「打开方式」走的是 odoc Apple Event，不是命令行 argv。
+/// 没有 delegate 实现时 AppKit 直接弹
+/// 「yyp-md cannot open files in the "Markdown Document" format」。
+/// app 已在运行时再打开文件，也路由到同一个方法。
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func application(_ application: NSApplication, open urls: [URL]) {
+        guard let url = urls.first else { return }
+        loadMarkdown(at: url.path)
+    }
+}
+let appDelegate = AppDelegate()
+
 let mainMenu = NSMenu()
 let appMenuItem = NSMenuItem()
 mainMenu.addItem(appMenuItem)
@@ -508,5 +520,6 @@ app.mainMenu = mainMenu
 
 window.makeKeyAndOrderFront(nil)
 app.activate(ignoringOtherApps: true)
+app.delegate = appDelegate
 syncFromScroll()
 app.run()
